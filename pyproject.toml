@@ -19,6 +19,8 @@ video-mixed-clip = "ai_local_video_mixer.cli:main"
 ai-local-video-mixer = "ai_local_video_mixer.cli:main"
 script-driven-mixer = "ai_local_video_mixer.cli:main"
 material-intelligence = "ai_local_video_mixer.material_cli:main"
+source-transcripts = "ai_local_video_mixer.source_transcription_cli:main"
+information-flow-copy = "ai_local_video_mixer.information_flow_cli:main"
 creative-variants = "ai_local_video_mixer.variant_cli:main"
 
 [tool.setuptools.packages.find]
