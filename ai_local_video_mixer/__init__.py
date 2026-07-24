@@ -1,7 +1,9 @@
-"""Local, reviewable, script-driven video remix pipeline."""
+"""Script-driven local media mixer.
 
-from .config import MixerConfig, load_config
-from .pipeline import ScriptDrivenMixer
+The package plans edits from narration text and a local media catalog.
+External software and model locations are discovered at runtime.
+"""
 
-__all__ = ["MixerConfig", "ScriptDrivenMixer", "load_config"]
-__version__ = "0.7.0.dev0"
+from .pipeline import ScriptMixerPipeline
+
+__all__ = ["ScriptMixerPipeline"]

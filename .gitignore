@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.runtime/
+outputs/
+script_mixer.local.json
+script_mixer.config.json
+*.local.json
+.DS_Store
+Thumbs.db

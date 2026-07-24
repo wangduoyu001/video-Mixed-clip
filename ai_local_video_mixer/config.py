@@ -19,7 +19,14 @@ class DiscoveryConfig:
 class MediaScanConfig:
     supported_extensions: list[str] = field(
         default_factory=lambda: [
-            ".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v", ".mts", ".m2ts",
+            ".mp4",
+            ".mov",
+            ".mkv",
+            ".avi",
+            ".webm",
+            ".m4v",
+            ".mts",
+            ".m2ts",
         ]
     )
     recursive: bool = True
@@ -231,5 +238,3 @@ def write_default_config(path: str | Path) -> Path:
         encoding="utf-8",
     )
     return target
-
-MixerConfig = RuntimeConfig

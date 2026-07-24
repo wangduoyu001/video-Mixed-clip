@@ -1,0 +1,9 @@
+{
+  "repository": "wangduoyu001/video-Mixed-clip",
+  "package": "ai_local_video_mixer",
+  "source_repository": "wangduoyu001/ai-short-drama-production-controller",
+  "source_branch": "feature/script-driven-local-mixer",
+  "separation": "standalone",
+  "runtime_dependency_on_source_repository": false,
+  "maximum_source_process_seconds": 40.0
+}

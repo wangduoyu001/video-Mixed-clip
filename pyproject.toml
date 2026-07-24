@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "video-mixed-clip"
-version = "0.1.0"
-description = "本地文案驱动视频混剪、字幕对齐与剪映可编辑交付"
+version = "0.7.0.dev0"
+description = "AI本地视频素材混剪、字幕对齐与剪映可编辑交付"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
