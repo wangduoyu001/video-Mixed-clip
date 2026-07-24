@@ -14,6 +14,7 @@ param(
     [double]$HandleAfter = 1.0,
     [switch]$FastScan,
     [switch]$SkipModels,
+    [switch]$SkipSourceTranscripts,
     [switch]$NoDraft,
     [switch]$RequireDraft,
     [switch]$NoPreview,
@@ -37,7 +38,7 @@ if ($Voice -and -not (Test-Path $Voice)) {
     throw "Voice file not found: $Voice"
 }
 
-Write-Host "[1/4] Scanning the complete source library..."
+Write-Host "[1/5] Scanning the complete source library..."
 $ScanArguments = @("--config", $Config, "scan-media", "--root", $MediaRoot)
 if ($FastScan) {
     $ScanArguments += "--fast"
@@ -48,20 +49,31 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if (-not $SkipModels) {
-    Write-Host "[2/4] Running multi-frame material intelligence and hard packaging filters..."
+    Write-Host "[2/5] Running multi-frame material intelligence and hard packaging filters..."
     & material-intelligence --config $Config analyze
     if ($LASTEXITCODE -ne 0) {
         throw "Material intelligence failed or rejected unanalyzed clips. Review the report before editing."
     }
 
-    Write-Host "[3/4] Building semantic embeddings from the filtered catalog..."
+    if (-not $SkipSourceTranscripts) {
+        Write-Host "[3/5] Transcribing dialogue from original source videos..."
+        & source-transcripts --config $Config build
+        if ($LASTEXITCODE -ne 0) {
+            throw "Source transcription failed. Install or configure Whisper, or use -SkipSourceTranscripts explicitly."
+        }
+    } else {
+        Write-Host "[3/5] Source dialogue transcription skipped by explicit request."
+    }
+
+    Write-Host "[4/5] Building semantic embeddings from the filtered multimodal catalog..."
     & script-driven-mixer --config $Config build-embeddings
     if ($LASTEXITCODE -ne 0) {
         throw "Embedding build failed with exit code $LASTEXITCODE"
     }
 } else {
-    Write-Host "[2/4] Material intelligence skipped by explicit request."
-    Write-Host "[3/4] Embedding build skipped by explicit request."
+    Write-Host "[2/5] Material intelligence skipped by explicit request."
+    Write-Host "[3/5] Source dialogue transcription skipped by explicit request."
+    Write-Host "[4/5] Embedding build skipped by explicit request."
 }
 
 $Arguments = @(
@@ -99,7 +111,7 @@ if ($BurnSubtitles) {
     $Arguments += "--burn-subtitles"
 }
 
-Write-Host "[4/4] Planning the filtered timeline and exporting Jianying editable output..."
+Write-Host "[5/5] Planning the filtered timeline and exporting Jianying editable output..."
 & script-driven-mixer @Arguments
 if ($LASTEXITCODE -ne 0) {
     throw "Jianying project generation failed with exit code $LASTEXITCODE"
