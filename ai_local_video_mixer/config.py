@@ -32,7 +32,8 @@ class MediaScanConfig:
     recursive: bool = True
     follow_symlinks: bool = False
     minimum_source_seconds: float = 0.7
-    maximum_source_process_seconds: float = 40.0
+    # 0 means index the full source. Usage limits belong in MixingRules, not scanning.
+    maximum_source_process_seconds: float = 0.0
     scene_detection_enabled: bool = True
     scene_threshold: float = 0.34
     minimum_scene_seconds: float = 0.7
@@ -115,6 +116,42 @@ class SubtitleConfig:
 
 
 @dataclass(slots=True)
+class MaterialIntelligenceConfig:
+    enabled: bool = True
+    frame_interval_seconds: float = 0.5
+    minimum_frames: int = 4
+    maximum_frames: int = 12
+    frame_width: int = 640
+    analysis_root: str = ".runtime/script_mixer/material_intelligence"
+    hard_reject_product_packaging: bool = True
+    hard_reject_unknown_container: bool = True
+    hard_reject_shipping_packaging: bool = True
+    hard_reject_watermark: bool = True
+    packaging_confidence_threshold: float = 0.55
+    uncertain_object_confidence_threshold: float = 0.45
+    detect_original_subtitles: bool = True
+    detect_screen_text: bool = True
+    detect_props: bool = True
+    detect_editing_techniques: bool = True
+    infer_implications: bool = True
+    keep_analysis_frames: bool = False
+    fail_closed_on_analysis_error: bool = True
+
+
+@dataclass(slots=True)
+class CreativeVariantConfig:
+    default_variant_count: int = 8
+    hook_seconds: float = 3.0
+    preserve_hook_by_default: bool = True
+    preserve_cta_by_default: bool = False
+    maximum_changed_dimensions: int = 2
+    avoid_same_clip_position_across_variants: bool = True
+    avoid_repeating_source_in_adjacent_segments: bool = True
+    minimum_candidate_score: float = 0.35
+    output_dir_name: str = "variants"
+
+
+@dataclass(slots=True)
 class MixingRules:
     target_width: int = 1080
     target_height: int = 1920
@@ -172,6 +209,8 @@ class RuntimeConfig:
     audio: AudioConfig = field(default_factory=AudioConfig)
     transcription: TranscriptionConfig = field(default_factory=TranscriptionConfig)
     subtitles: SubtitleConfig = field(default_factory=SubtitleConfig)
+    material_intelligence: MaterialIntelligenceConfig = field(default_factory=MaterialIntelligenceConfig)
+    creative_variants: CreativeVariantConfig = field(default_factory=CreativeVariantConfig)
     mixing: MixingRules = field(default_factory=MixingRules)
     integration: IntegrationConfig = field(default_factory=IntegrationConfig)
     edit_package: EditPackageConfig = field(default_factory=EditPackageConfig)
