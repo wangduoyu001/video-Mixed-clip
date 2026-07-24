@@ -8,11 +8,8 @@ from pathlib import Path
 from .catalog import MediaCatalog
 from .config import load_config
 from .environment import discover_environment
-from .material_intelligence import (
-    MaterialIntelligenceEngine,
-    MaterialIntelligenceStore,
-    MaterialVisionAnalyzer,
-)
+from .material_intelligence import MaterialIntelligenceStore, MaterialVisionAnalyzer
+from .material_policy import StrictMaterialIntelligenceEngine
 from .ollama_adapter import OllamaClient, OllamaError
 
 
@@ -116,7 +113,7 @@ def main() -> int:
 
     catalog = MediaCatalog(config.database_path)
     catalog.initialize()
-    engine = MaterialIntelligenceEngine(
+    engine = StrictMaterialIntelligenceEngine(
         catalog=catalog,
         store=store,
         analyzer=MaterialVisionAnalyzer(client, model.name),
