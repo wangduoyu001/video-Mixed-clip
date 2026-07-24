@@ -1,11 +1,9 @@
-# bootstrap-version: 2
+# bootstrap-version: 3
 name: Bootstrap standalone mixer repository
 
 on:
   push:
     branches: [main]
-    paths:
-      - ".github/workflows/bootstrap-mixer-repository.yml"
   workflow_dispatch:
 
 permissions:
@@ -45,20 +43,15 @@ jobs:
           python _source/scripts/build_standalone_mixer_repo.py \
             --source _source \
             --target "$EXPORT_DIR"
-
           python - <<'PY'
           import json
           import os
           from pathlib import Path
-
-          export_dir = Path(os.environ["RUNNER_TEMP"]) / "video-Mixed-clip-export"
-          manifest_path = export_dir / "STANDALONE_MIGRATION.json"
-          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-          manifest["standalone_repository"] = "wangduoyu001/video-Mixed-clip"
-          manifest_path.write_text(
-              json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-              encoding="utf-8",
-          )
+          root = Path(os.environ["RUNNER_TEMP"]) / "video-Mixed-clip-export"
+          path = root / "STANDALONE_MIGRATION.json"
+          data = json.loads(path.read_text(encoding="utf-8"))
+          data["standalone_repository"] = "wangduoyu001/video-Mixed-clip"
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           PY
 
       - name: Validate standalone repository
@@ -72,7 +65,7 @@ jobs:
           pytest -q
           ai-local-video-mixer --help >/dev/null
 
-      - name: Replace target contents with standalone project
+      - name: Replace target contents
         shell: bash
         run: |
           set -euo pipefail
@@ -80,7 +73,7 @@ jobs:
           rm -rf _source
           rsync -a --delete --exclude ".git" "$EXPORT_DIR/" ./
 
-      - name: Commit and push migration
+      - name: Commit migration
         shell: bash
         run: |
           set -euo pipefail
@@ -88,7 +81,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
-            echo "No migration changes to commit."
             exit 0
           fi
           git commit -m "Migrate standalone local video mixer"
