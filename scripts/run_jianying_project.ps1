@@ -37,14 +37,42 @@ if ($Voice -and -not (Test-Path $Voice)) {
     throw "Voice file not found: $Voice"
 }
 
+Write-Host "[1/4] Scanning the complete source library..."
+$ScanArguments = @("--config", $Config, "scan-media", "--root", $MediaRoot)
+if ($FastScan) {
+    $ScanArguments += "--fast"
+}
+& script-driven-mixer @ScanArguments
+if ($LASTEXITCODE -ne 0) {
+    throw "Media scan failed with exit code $LASTEXITCODE"
+}
+
+if (-not $SkipModels) {
+    Write-Host "[2/4] Running multi-frame material intelligence and hard packaging filters..."
+    & material-intelligence --config $Config analyze
+    if ($LASTEXITCODE -ne 0) {
+        throw "Material intelligence failed or rejected unanalyzed clips. Review the report before editing."
+    }
+
+    Write-Host "[3/4] Building semantic embeddings from the filtered catalog..."
+    & script-driven-mixer --config $Config build-embeddings
+    if ($LASTEXITCODE -ne 0) {
+        throw "Embedding build failed with exit code $LASTEXITCODE"
+    }
+} else {
+    Write-Host "[2/4] Material intelligence skipped by explicit request."
+    Write-Host "[3/4] Embedding build skipped by explicit request."
+}
+
 $Arguments = @(
     "--config", $Config,
     "make-jianying-project",
-    "--media-root", $MediaRoot,
     "--script", $Script,
     "--candidate-count", "$CandidateCount",
     "--handle-before", "$HandleBefore",
-    "--handle-after", "$HandleAfter"
+    "--handle-after", "$HandleAfter",
+    "--skip-enrich",
+    "--skip-embeddings"
 )
 
 if ($Voice) {
@@ -57,12 +85,6 @@ if ($DraftRoot) {
 }
 if ($ProjectId) {
     $Arguments += @("--project-id", $ProjectId)
-}
-if ($FastScan) {
-    $Arguments += "--fast-scan"
-}
-if ($SkipModels) {
-    $Arguments += @("--skip-enrich", "--skip-embeddings")
 }
 if ($NoDraft) {
     $Arguments += "--no-draft"
@@ -77,7 +99,7 @@ if ($BurnSubtitles) {
     $Arguments += "--burn-subtitles"
 }
 
-Write-Host "Running script-driven-mixer with Jianying editable output..."
+Write-Host "[4/4] Planning the filtered timeline and exporting Jianying editable output..."
 & script-driven-mixer @Arguments
 if ($LASTEXITCODE -ne 0) {
     throw "Jianying project generation failed with exit code $LASTEXITCODE"
