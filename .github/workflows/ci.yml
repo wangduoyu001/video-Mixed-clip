@@ -22,4 +22,9 @@ jobs:
       - name: Tests
         run: python -m pytest -q
       - name: CLI
-        run: video-mixed-clip --help
+        run: |
+          video-mixed-clip --help
+          material-intelligence --help
+          source-transcripts --help
+          information-flow-copy --help
+          creative-variants --help
