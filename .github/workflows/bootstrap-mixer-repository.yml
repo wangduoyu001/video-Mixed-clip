@@ -1,0 +1,94 @@
+name: Bootstrap standalone mixer repository
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/bootstrap-mixer-repository.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-standalone-mixer
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout mixer source branch
+        uses: actions/checkout@v4
+        with:
+          repository: wangduoyu001/ai-short-drama-production-controller
+          ref: feature/script-driven-local-mixer
+          path: _source
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build standalone repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          export EXPORT_DIR="${RUNNER_TEMP}/video-Mixed-clip-export"
+          rm -rf "$EXPORT_DIR"
+          python _source/scripts/build_standalone_mixer_repo.py \
+            --source _source \
+            --target "$EXPORT_DIR"
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          export_dir = Path(os.environ["RUNNER_TEMP"]) / "video-Mixed-clip-export"
+          manifest_path = export_dir / "STANDALONE_MIGRATION.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest["standalone_repository"] = "wangduoyu001/video-Mixed-clip"
+          manifest_path.write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Validate standalone repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          export EXPORT_DIR="${RUNNER_TEMP}/video-Mixed-clip-export"
+          python -m pip install --upgrade pip
+          python -m pip install -e "${EXPORT_DIR}[dev]"
+          cd "$EXPORT_DIR"
+          pytest -q
+          ai-local-video-mixer --help >/dev/null
+
+      - name: Replace target contents with standalone project
+        shell: bash
+        run: |
+          set -euo pipefail
+          export EXPORT_DIR="${RUNNER_TEMP}/video-Mixed-clip-export"
+          rm -rf _source
+          rsync -a --delete --exclude ".git" "$EXPORT_DIR/" ./
+
+      - name: Commit and push migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No migration changes to commit."
+            exit 0
+          fi
+          git commit -m "Migrate standalone local video mixer"
+          git push origin main
