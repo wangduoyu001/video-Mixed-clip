@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from ai_local_video_mixer.models import MediaClip
-from ai_local_video_mixer.source_transcription import transcript_text_for_clip
+from ai_local_video_mixer.source_transcription import (
+    _base_visual_description,
+    transcript_text_for_clip,
+)
 from ai_local_video_mixer.transcription import TranscriptSegment, TranscriptionResult
 
 
@@ -43,3 +46,8 @@ def test_short_boundary_touch_is_not_mistaken_for_dialogue() -> None:
         segments=[TranscriptSegment(segment_id=1, text="边界", start=0.0, end=1.0)],
     )
     assert transcript_text_for_clip(result, _clip(1.0, 2.0)) == ""
+
+
+def test_repeated_transcription_does_not_duplicate_dialogue_lines() -> None:
+    description = "人物在桌面操作产品\n原素材对白：旧对白\n原素材对白：旧对白"
+    assert _base_visual_description(description) == "人物在桌面操作产品"
