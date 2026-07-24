@@ -5,5 +5,8 @@
   "source_branch": "feature/script-driven-local-mixer",
   "separation": "standalone",
   "runtime_dependency_on_source_repository": false,
-  "maximum_source_process_seconds": 40.0
+  "index_full_source_by_default": true,
+  "maximum_source_process_seconds": 0.0,
+  "hard_reject_product_packaging": true,
+  "supports_creative_variants": true
 }
