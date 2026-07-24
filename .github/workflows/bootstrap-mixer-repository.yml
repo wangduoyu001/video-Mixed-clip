@@ -1,3 +1,4 @@
+# bootstrap-version: 2
 name: Bootstrap standalone mixer repository
 
 on:
