@@ -7,14 +7,13 @@ from pathlib import Path
 
 from .catalog import MediaCatalog
 from .config import TranscriptionConfig
-from .models import MediaClip, MediaSource
+from .models import MediaClip, MediaSource, ModelLocation
 from .transcription import (
     TranscriptionError,
     TranscriptionResult,
     resolve_whisper_model,
     run_whisper_cli,
 )
-from .models import ModelLocation
 
 
 _SCHEMA = """
@@ -146,6 +145,15 @@ def transcript_text_for_clip(result: TranscriptionResult, clip: MediaClip) -> st
     return " ".join(dict.fromkeys(parts)).strip()
 
 
+def _base_visual_description(description: str) -> str:
+    lines = [
+        line.strip()
+        for line in description.splitlines()
+        if line.strip() and not line.strip().startswith("原素材对白：")
+    ]
+    return "\n".join(lines).strip()
+
+
 class SourceTranscriptIndexer:
     def __init__(
         self,
@@ -181,22 +189,27 @@ class SourceTranscriptIndexer:
         limit: int | None = None,
         force: bool = False,
     ) -> SourceTranscriptionSummary:
+        sources = self.catalog.list_sources()
+        if limit is not None:
+            sources = sources[: max(0, limit)]
+        summary = SourceTranscriptionSummary(
+            model=self.model or "",
+            requested=len(sources),
+        )
+        audio_sources = [source for source in sources if source.has_audio]
+        summary.skipped_no_audio = len(sources) - len(audio_sources)
+        if not audio_sources:
+            return summary
         if not self.whisper_path:
             raise TranscriptionError("Whisper CLI was not discovered")
         if not self.model:
             raise TranscriptionError("No Whisper model is available for source transcription")
-        sources = self.catalog.list_sources()
-        if limit is not None:
-            sources = sources[: max(0, limit)]
-        summary = SourceTranscriptionSummary(model=self.model, requested=len(sources))
+
         clips_by_source: dict[str, list[MediaClip]] = {}
         for clip in self.catalog.list_clips(usable_only=False):
             clips_by_source.setdefault(clip.source_id, []).append(clip)
 
-        for source in sources:
-            if not source.has_audio:
-                summary.skipped_no_audio += 1
-                continue
+        for source in audio_sources:
             metadata = self.store.metadata(source.source_id, self.model)
             if metadata and metadata[0] == source.fingerprint and not force:
                 summary.unchanged += 1
@@ -234,17 +247,26 @@ class SourceTranscriptIndexer:
         updated = 0
         for clip in clips:
             dialogue = transcript_text_for_clip(result, clip)
-            old_tags = [item for item in clip.tags if not item.startswith("dialogue:")]
+            old_tags = [
+                item
+                for item in clip.tags
+                if not item.startswith("dialogue:") and item != "no_dialogue_in_clip"
+            ]
+            visual = _base_visual_description(clip.description)
             if dialogue:
-                clip.tags = list(dict.fromkeys([*old_tags, f"dialogue:{dialogue[:160]}"]))[:64]
-                visual = clip.description.strip()
+                clip.tags = list(
+                    dict.fromkeys([*old_tags, f"dialogue:{dialogue[:160]}"])
+                )[:64]
                 clip.description = (
                     f"{visual}\n原素材对白：{dialogue}"
                     if visual
                     else f"原素材对白：{dialogue}"
                 )
             else:
-                clip.tags = list(dict.fromkeys([*old_tags, "no_dialogue_in_clip"]))[:64]
+                clip.tags = list(
+                    dict.fromkeys([*old_tags, "no_dialogue_in_clip"])
+                )[:64]
+                clip.description = visual
             self.catalog.upsert_clip(clip)
             updated += 1
         return updated
